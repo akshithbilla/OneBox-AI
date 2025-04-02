@@ -8,10 +8,12 @@ import {
   TouchableOpacity, 
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator
+  ActivityIndicator,
+  SafeAreaView
 } from 'react-native';
 import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
+import Markdown from 'react-native-markdown-display';
 
 const AI = () => {
   const [query, setQuery] = useState('');
@@ -66,167 +68,359 @@ const AI = () => {
   }, [messages]);
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-      keyboardVerticalOffset={90}
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>AI Assistant</Text>
-      </View>
-
-      {/* Chat Messages */}
-      <ScrollView 
-        ref={scrollViewRef}
-        style={styles.chatContainer}
-        contentContainerStyle={styles.chatContent}
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
-        {messages.length === 0 ? (
-          <View style={styles.welcomeContainer}>
-            <Ionicons name="chatbubbles" size={48} color="#4A6FA5" />
-            <Text style={styles.welcomeText}>How can I help you today?</Text>
-          </View>
-        ) : (
-          messages.map((msg, index) => (
-            <View 
-              key={index} 
-              style={[
-                styles.messageBubble, 
-                msg.sender === 'user' ? styles.userBubble : styles.botBubble
-              ]}
-            >
-              <Text style={styles.messageText}>{msg.text}</Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>AI Assistant</Text>
+            <View style={styles.headerStatus}>
+              <View style={styles.statusIndicator} />
+              <Text style={styles.statusText}>Online</Text>
             </View>
-          ))
-        )}
-        {loading && (
-          <View style={[styles.messageBubble, styles.botBubble]}>
-            <ActivityIndicator size="small" color="#4A6FA5" />
           </View>
-        )}
-      </ScrollView>
+        </View>
 
-      {/* Input Area */}
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Type your message..."
-          value={query}
-          onChangeText={setQuery}
-          multiline
-          onSubmitEditing={fetchGeminiResponse}
-        />
-        <TouchableOpacity 
-          style={styles.sendButton} 
-          onPress={fetchGeminiResponse}
-          disabled={loading || !query.trim()}
+        {/* Chat Messages */}
+        <ScrollView 
+          ref={scrollViewRef}
+          style={styles.chatContainer}
+          contentContainerStyle={styles.chatContent}
+          showsVerticalScrollIndicator={false}
         >
-          <Ionicons 
-            name="send" 
-            size={24} 
-            color={!query.trim() ? '#ccc' : '#4A6FA5'} 
+          {messages.length === 0 ? (
+            <View style={styles.welcomeContainer}>
+              <View style={styles.welcomeIllustration}>
+                <Ionicons name="sparkles" size={48} color="#6E6CEA" />
+              </View>
+              <Text style={styles.welcomeTitle}>How can I help you today?</Text>
+              <Text style={styles.welcomeSubtitle}>Ask me anything, from creative ideas to technical explanations.</Text>
+              
+              <View style={styles.suggestionContainer}>
+                <Text style={styles.suggestionTitle}>Try asking:</Text>
+                <TouchableOpacity 
+                  style={styles.suggestionButton}
+                  onPress={() => setQuery("Explain quantum computing in simple terms")}
+                >
+                  <Text style={styles.suggestionText}>"Explain quantum computing in simple terms"</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.suggestionButton}
+                  onPress={() => setQuery("Write a poem about artificial intelligence")}
+                >
+                  <Text style={styles.suggestionText}>"Write a poem about artificial intelligence"</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            messages.map((msg, index) => (
+              <View 
+                key={index} 
+                style={[
+                  styles.messageContainer, 
+                  msg.sender === 'user' ? styles.userContainer : styles.botContainer
+                ]}
+              >
+                <View style={styles.avatar}>
+                  {msg.sender === 'user' ? (
+                    <Ionicons name="person" size={20} color="#fff" />
+                  ) : (
+                    <Ionicons name="sparkles" size={20} color="#fff" />
+                  )}
+                </View>
+                
+                <View style={[
+                  styles.messageBubble, 
+                  msg.sender === 'user' ? styles.userBubble : styles.botBubble
+                ]}>
+                  {msg.sender === 'bot' ? (
+                    <Markdown style={markdownStyles}>
+                      {msg.text}
+                    </Markdown>
+                  ) : (
+                    <Text style={styles.userMessageText}>{msg.text}</Text>
+                  )}
+                </View>
+              </View>
+            ))
+          )}
+          {loading && (
+            <View style={[styles.messageContainer, styles.botContainer]}>
+              <View style={styles.avatar}>
+                <Ionicons name="sparkles" size={20} color="#fff" />
+              </View>
+              <View style={[styles.messageBubble, styles.botBubble]}>
+                <ActivityIndicator size="small" color="#6E6CEA" />
+              </View>
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Input Area */}
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Message AI Assistant..."
+            placeholderTextColor="#9CA3AF"
+            value={query}
+            onChangeText={setQuery}
+            multiline
+            onSubmitEditing={fetchGeminiResponse}
           />
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+          <TouchableOpacity 
+            style={[
+              styles.sendButton, 
+              !query.trim() && styles.disabledButton
+            ]} 
+            onPress={fetchGeminiResponse}
+            disabled={loading || !query.trim()}
+          >
+            <Ionicons 
+              name="send" 
+              size={20} 
+              color={!query.trim() ? '#9CA3AF' : '#fff'} 
+            />
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
+const markdownStyles = {
+  body: {
+    color: '#1F2937',
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  heading1: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#111827',
+    marginVertical: 8,
+  },
+  heading2: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginVertical: 6,
+  },
+  paragraph: {
+    marginVertical: 4,
+  },
+  link: {
+    color: '#6E6CEA',
+    textDecorationLine: 'underline',
+  },
+  list_item: {
+    flexDirection: 'row',
+    marginBottom: 4,
+  },
+  bullet_list: {
+    marginVertical: 4,
+    paddingLeft: 16,
+  },
+  ordered_list: {
+    marginVertical: 4,
+    paddingLeft: 16,
+  },
+  code_inline: {
+    backgroundColor: '#F3F4F6',
+    padding: 2,
+    borderRadius: 4,
+    fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace',
+  },
+  code_block: {
+    backgroundColor: '#F3F4F6',
+    padding: 12,
+    borderRadius: 6,
+    marginVertical: 8,
+    fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace',
+  },
+  blockquote: {
+    backgroundColor: '#F3F4F6',
+    borderLeftWidth: 4,
+    borderLeftColor: '#6E6CEA',
+    paddingLeft: 12,
+    marginVertical: 8,
+  },
+};
+
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#fff',
   },
   header: {
-    paddingTop: Platform.OS === 'ios' ? 50 : 20,
-    paddingBottom: 15,
+    paddingVertical: 16,
     paddingHorizontal: 20,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#eaeaea',
+    borderBottomColor: '#F3F4F6',
+    backgroundColor: '#fff',
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '700',
+    color: '#111827',
+  },
+  headerStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statusIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#10B981',
+    marginRight: 6,
+  },
+  statusText: {
+    fontSize: 14,
+    color: '#6B7280',
   },
   chatContainer: {
     flex: 1,
-    paddingHorizontal: 15,
+    backgroundColor: '#F9FAFB',
   },
   chatContent: {
-    paddingTop: 15,
-    paddingBottom: 80,
+    paddingVertical: 16,
   },
   welcomeContainer: {
-    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 48,
+    paddingBottom: 32,
+  },
+  welcomeIllustration: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#EEF2FF',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 100,
+    marginBottom: 24,
   },
-  welcomeText: {
-    fontSize: 18,
-    color: '#666',
-    marginTop: 20,
+  welcomeTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
     textAlign: 'center',
+  },
+  welcomeSubtitle: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 32,
+    lineHeight: 24,
+  },
+  suggestionContainer: {
+    width: '100%',
+    marginTop: 16,
+  },
+  suggestionTitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 12,
+    fontWeight: '500',
+  },
+  suggestionButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  suggestionText: {
+    fontSize: 15,
+    color: '#374151',
+  },
+  messageContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    alignItems: 'flex-start',
+  },
+  userContainer: {
+    justifyContent: 'flex-end',
+  },
+  botContainer: {
+    justifyContent: 'flex-start',
+  },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#6E6CEA',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   messageBubble: {
     maxWidth: '80%',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 12,
+    borderRadius: 16,
+    padding: 16,
   },
   userBubble: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#4A6FA5',
-    borderBottomRightRadius: 2,
+    backgroundColor: '#6E6CEA',
+    borderBottomRightRadius: 4,
   },
   botBubble: {
-    alignSelf: 'flex-start',
     backgroundColor: '#fff',
-    borderBottomLeftRadius: 2,
+    borderBottomLeftRadius: 4,
     borderWidth: 1,
-    borderColor: '#eaeaea',
-  },
-  messageText: {
-    fontSize: 16,
-    lineHeight: 22,
+    borderColor: '#E5E7EB',
   },
   userMessageText: {
     color: '#fff',
-  },
-  botMessageText: {
-    color: '#333',
+    fontSize: 16,
+    lineHeight: 24,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: '#fff',
     borderTopWidth: 1,
-    borderTopColor: '#eaeaea',
+    borderTopColor: '#E5E7EB',
   },
   input: {
     flex: 1,
-    minHeight: 50,
+    minHeight: 48,
     maxHeight: 120,
-    paddingHorizontal: 15,
+    paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#f0f2f5',
-    borderRadius: 25,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 24,
     fontSize: 16,
-    marginRight: 10,
+    color: '#111827',
+    marginRight: 12,
   },
   sendButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#f0f2f5',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#6E6CEA',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  disabledButton: {
+    backgroundColor: '#E5E7EB',
   },
 });
 
